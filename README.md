@@ -1,4 +1,3 @@
-```markdown
 # HealthTrack Backend
 
 API RESTful desenvolvida em **FastAPI** e **PostgreSQL** para suportar todas as funcionalidades do HealthTrack: gestão de usuários (pacientes e nutricionistas), questionários de triagem, cálculo de scores de risco nutricional, geração de relatórios e integração com frontend e outros serviços.
@@ -149,4 +148,3 @@ docker-compose exec backend pytest --maxfail=1 --disable-warnings -q
 Este projeto está licenciado sob a [MIT License](LICENSE).  
 
 ---
-```

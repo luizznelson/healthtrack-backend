@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine, Base
 from app.models.user import User

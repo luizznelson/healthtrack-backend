@@ -1,6 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+<<<<<<< Updated upstream
 from typing import Optional
+=======
+>>>>>>> Stashed changes
 import datetime
 
 class UserBase(BaseModel):
@@ -26,4 +29,8 @@ class Token(BaseModel):
      token_type: str
 
 class TokenData(BaseModel):
+<<<<<<< Updated upstream
     email: Optional[str] = None
+=======
+    email: str
+>>>>>>> Stashed changes

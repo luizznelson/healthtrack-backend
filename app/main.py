@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import auth
+from app.routers.auth import router as auth_router
+from app.routers.questionario import router as questionario_router
 
-# cria tabelas automaticamente (em prod, use Alembic)
+# cria tabelas automaticamente (em produção, use Alembic)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="HealthTrack API", debug=True)
@@ -16,4 +17,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
+app.include_router(auth_router)
+app.include_router(questionario_router)

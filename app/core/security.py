@@ -1,68 +1,61 @@
-<<<<<<< Updated upstream
-=======
-from sqlalchemy.orm import Session  # Adicione essa importação
+from datetime import datetime, timedelta
+from typing import Optional, Set
+from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
->>>>>>> Stashed changes
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from app.config import settings
-from app.schemas.user import TokenData
-<<<<<<< Updated upstream
-=======
-from app.database import get_db  # Certifique-se de que get_db está sendo importado
-from app.models.user import User
+from app.core.config import settings
+from app.crud.user import get_user_by_username
+from app.schemas import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+_blacklisted_tokens: Set[str] = set()
 
-# Exceção padrão para credenciais inválidas
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
-)
->>>>>>> Stashed changes
+def blacklist_token(token: str):
+    _blacklisted_tokens.add(token)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def is_token_blacklisted(token: str) -> bool:
+    return token in _blacklisted_tokens
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+def require_role(*allowed_roles: str):
+    def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role not in allowed_roles:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Acesso negado")
+        return current_user
+    return role_checker
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-def create_access_token(data: dict) -> str:
-    to_encode = data.copy()
+def create_access_token(subject: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    payload = {"sub": subject, "exp": expire, "type": "access"}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-def decode_access_token(token: str) -> TokenData:
+def create_refresh_token(subject: str) -> str:
+    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    payload = {"sub": subject, "exp": expire, "type": "refresh"}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+    if is_token_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+        )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        return TokenData(email=email)
-    except JWTError:
-        return TokenData()
-<<<<<<< Updated upstream
-=======
-
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-):
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")  # 'sub' contém o email, e não o id
-        if email is None:
-            raise credentials_exception
-        token_data = TokenData(email=email)  # Passando apenas o email para TokenData
-    except JWTError:
-        raise credentials_exception
-
-    user = db.query(User).filter(User.email == token_data.email).first()  # Busca pelo email
-    if user is None:
-        raise credentials_exception
+        if payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+            )
+        username: Optional[str] = payload.get("sub")
+        if not username:
+            raise ValueError("Missing username")
+    except (JWTError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+    user = get_user_by_username(username)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
->>>>>>> Stashed changes

@@ -1,19 +1,12 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine, Base
-from app.routers import auth
+from app.routers import auth, questionario, nutricionistas
+from app.core.config import settings
 
-# cria tabelas automaticamente (em prod, use Alembic)
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="HealthTrack API", debug=True)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION
 )
 
-app.include_router(auth.router)
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(questionario.router, prefix="/questionarios", tags=["questionarios"])
+app.include_router(nutricionistas.router, prefix="/nutricionistas", tags=["nutricionistas"])

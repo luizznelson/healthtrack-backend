@@ -6,7 +6,8 @@ sqlalchemy
 alembic
 psycopg2-binary
 python-jose
-passlib[bcrypt]
+passlib
+bcrypt
 pytest
 pytest-cov
 python-multipart

@@ -1,8 +1,8 @@
-"""Initial models
+"""initial migration
 
-Revision ID: 3fba065cb5fd
+Revision ID: 4335a71daddc
 Revises: 
-Create Date: 2025-06-12 00:09:33.283263
+Create Date: 2025-06-18 12:53:01.454477
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3fba065cb5fd'
+revision: str = '4335a71daddc'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,10 +32,12 @@ def upgrade() -> None:
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(), nullable=True),
-    sa.Column('hashed_password', sa.String(), nullable=True),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('hashed_password', sa.String(), nullable=False),
     sa.Column('role', sa.Enum('paciente', 'nutricionista', name='userrole'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('question_templates',
@@ -49,9 +51,9 @@ def upgrade() -> None:
     op.create_index(op.f('ix_question_templates_id'), 'question_templates', ['id'], unique=False)
     op.create_table('questionarios',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('data', sa.DateTime(), nullable=True),
     sa.Column('respostas', sa.Text(), nullable=True),
-    sa.Column('owner_id', sa.Integer(), nullable=True),
+    sa.Column('data', sa.DateTime(), nullable=True),
+    sa.Column('owner_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -59,8 +61,8 @@ def upgrade() -> None:
     op.create_table('relatorios',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('conteudo', sa.Text(), nullable=True),
-    sa.Column('paciente_id', sa.Integer(), nullable=True),
-    sa.Column('nutricionista_id', sa.Integer(), nullable=True),
+    sa.Column('paciente_id', sa.Integer(), nullable=False),
+    sa.Column('nutricionista_id', sa.Integer(), nullable=False),
     sa.Column('data_criacao', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['nutricionista_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['paciente_id'], ['users.id'], ),
@@ -93,6 +95,7 @@ def downgrade() -> None:
     op.drop_table('question_templates')
     op.drop_index(op.f('ix_users_username'), table_name='users')
     op.drop_index(op.f('ix_users_id'), table_name='users')
+    op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     op.drop_index(op.f('ix_questionnaire_templates_title'), table_name='questionnaire_templates')
     op.drop_index(op.f('ix_questionnaire_templates_id'), table_name='questionnaire_templates')

@@ -13,13 +13,17 @@ class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
+    
+
 
 class UserBase(BaseModel):
     username: str
+    email: str
 
 class UserCreate(UserBase):
     password: str
     role: RoleEnum = RoleEnum.paciente
+    nutricionista_id: Optional[int] = None
 
 class User(UserBase):
     id: int
@@ -44,6 +48,10 @@ class Questionario(QuestionarioBase):
     model_config = {
         "from_attributes": True
     }
+    
+class RelatorioCreate(BaseModel):
+    paciente_id: int
+    conteudo: str
 
 # --- Relatório ---
 class Relatorio(BaseModel):
@@ -115,8 +123,11 @@ class QuestionnaireResponseIn(BaseModel):
 class QuestionnaireResponseOut(BaseModel):
     template_id: int
     total_score: int
+    paciente_id: int
     interpretation: str
+    data_resposta: datetime
 
     model_config = {
         "from_attributes": True
     }
+

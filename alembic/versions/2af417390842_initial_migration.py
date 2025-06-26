@@ -1,8 +1,8 @@
-"""Fix relatorio relationships
+"""initial migration
 
-Revision ID: c7678c8dc300
-Revises: 3fba065cb5fd
-Create Date: 2025-06-12 00:18:28.907541
+Revision ID: 2af417390842
+Revises: 7ac532dec37b
+Create Date: 2025-06-25 22:23:26.736947
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c7678c8dc300'
-down_revision: Union[str, None] = '3fba065cb5fd'
+revision: str = '2af417390842'
+down_revision: Union[str, None] = '7ac532dec37b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -15,32 +15,21 @@ class UserRole(PyEnum):
 
 class User(Base):
     __tablename__ = 'users'
+
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    username = Column(String, unique=True, index=True, nullable=True) 
+    email = Column(String, unique=True, index=True, nullable=False) 
+    hashed_password = Column(String, nullable=False)
     role = Column(SqlEnum(UserRole), default=UserRole.paciente)
 
-    # --- Relação com questionários (legado) ---
-    questionarios = relationship(
-        'Questionario',
-        back_populates='owner',
-        foreign_keys='Questionario.owner_id',
-        cascade='all, delete-orphan'
-    )
+    # Relações legadas
+    nutricionista_id = Column(Integer, ForeignKey('users.id'), nullable=True)
 
-    # --- Relações com relatórios ---
-    relatorios_paciente = relationship(
-        'Relatorio',
-        back_populates='paciente',
-        foreign_keys='Relatorio.paciente_id',
-        cascade='all, delete-orphan'
-    )
-    relatorios_nutricionista = relationship(
-        'Relatorio',
-        back_populates='nutricionista',
-        foreign_keys='Relatorio.nutricionista_id',
-        cascade='all, delete-orphan'
-    )
+    # Relacionamento reverso (acesso ao nutricionista que cadastrou o paciente)
+    nutricionista = relationship("User", remote_side=[id])
+    questionarios = relationship('Questionario', back_populates='owner', cascade='all, delete-orphan')
+    relatorios_paciente = relationship('Relatorio', back_populates='paciente', foreign_keys='Relatorio.paciente_id')
+    relatorios_nutricionista = relationship('Relatorio', back_populates='nutricionista', foreign_keys='Relatorio.nutricionista_id')
 
 class Questionario(Base):
     __tablename__ = 'questionarios'
@@ -74,6 +63,19 @@ class Relatorio(Base):
         back_populates='relatorios_nutricionista',
         foreign_keys=[nutricionista_id]
     )
+
+class QuestionnaireResponse(Base):
+    __tablename__ = "questionnaire_responses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("questionnaire_templates.id"), nullable=False)
+    paciente_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    total_score = Column(Integer, nullable=False)
+    interpretation = Column(Text, nullable=False)
+    data_resposta = Column(DateTime, default=datetime.utcnow)
+
+    paciente = relationship("User", foreign_keys=[paciente_id])
+    template = relationship("QuestionnaireTemplate", foreign_keys=[template_id])
 
 # Models dinâmicos para questionários
 class QuestionnaireTemplate(Base):

@@ -8,7 +8,6 @@ def get_questionarios(db: Session, user_id: int):
     return db.query(Questionario).filter(Questionario.owner_id == user_id).all()
 
 def create_questionario(db: Session, user_id: int, data: QuestionnaireResponseIn):
-    # funcionalidade legada opcional
     pass
 
 # CRUD questionários dinâmicos
@@ -26,6 +25,46 @@ def create_questionnaire_template(db: Session, data: QuestionnaireTemplateCreate
     db.refresh(tmpl)
     return tmpl
 
+from sqlalchemy.orm import Session
+from app.models import QuestionnaireResponse, Relatorio
+
+
+def salvar_resposta(
+    db: Session, template_id: int, paciente_id: int, total_score: int, interpretation: str
+) -> QuestionnaireResponse:
+    response = QuestionnaireResponse(
+        template_id=template_id,
+        paciente_id=paciente_id,
+        total_score=total_score,
+        interpretation=interpretation
+    )
+    db.add(response)
+    db.commit()
+    db.refresh(response)
+    return response
+
+
+def listar_respostas_por_paciente(db: Session, paciente_id: int):
+    return (
+        db.query(QuestionnaireResponse)
+        .filter_by(paciente_id=paciente_id)
+        .order_by(QuestionnaireResponse.data_resposta.desc())
+        .all()
+    )
+
+
+def criar_relatorio(db: Session, paciente_id: int, nutricionista_id: int, conteudo: str) -> Relatorio:
+    relatorio = Relatorio(
+        paciente_id=paciente_id,
+        nutricionista_id=nutricionista_id,
+        conteudo=conteudo
+    )
+    db.add(relatorio)
+    db.commit()
+    db.refresh(relatorio)
+    return relatorio
+
+
 def get_all_templates(db: Session):
     return db.query(QuestionnaireTemplate).order_by(QuestionnaireTemplate.id).all()
 
@@ -36,6 +75,7 @@ def compute_score_and_interpretation(db: Session, template_id: int, answers: Que
     template = get_template_by_id(db, template_id)
     if not template:
         return None
+
     total = 0
     for ans in answers.answers:
         opt = db.query(OptionTemplate).filter(
@@ -44,14 +84,34 @@ def compute_score_and_interpretation(db: Session, template_id: int, answers: Que
         ).first()
         if opt:
             total += opt.score
-    if total <= 5:
-        interp = 'Baixo risco de desenvolver diabetes.'
-    elif total <= 11:
-        interp = 'Risco moderado de desenvolver diabetes.'
+
+    # 🧠 Interpretação dinâmica por questionário
+    title = template.title.lower()
+
+    if "diabetes" in title:
+        if total <= 5:
+            interp = 'Baixo risco de desenvolver diabetes.'
+        elif total <= 11:
+            interp = 'Risco moderado de desenvolver diabetes.'
+        else:
+            interp = 'Alto risco de desenvolver diabetes.'
+
+    elif "hipertensão" in title:
+        if total <= 4:
+            interp = 'Baixo risco de desenvolver hipertensão.'
+        elif total <= 9:
+            interp = 'Risco moderado de desenvolver hipertensão.'
+        elif total <= 15:
+            interp = 'Alto risco de desenvolver hipertensão.'
+        else:
+            interp = 'Risco muito alto de desenvolver hipertensão.'
+
     else:
-        interp = 'Alto risco de desenvolver diabetes.'
+        interp = f'Score total: {total}. Nenhuma regra de interpretação cadastrada para "{template.title}".'
+
     return {
         'template_id': template_id,
         'total_score': total,
         'interpretation': interp
     }
+

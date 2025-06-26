@@ -15,6 +15,7 @@ from app.crud.questionario import (
     get_all_templates,
     get_template_by_id,
     compute_score_and_interpretation,
+    salvar_resposta,
 )
 from app.core.security import get_current_user, require_role
 
@@ -37,18 +38,17 @@ def create_template(
 @router.get(
     '/templates',
     response_model=List[QuestionnaireTemplateOut],
-    dependencies=[Depends(require_role("nutricionista"))],  # ou permita pacientes verem templates?
+    dependencies=[Depends(require_role("nutricionista", "paciente"))],  # ou permita pacientes verem templates?
 )
 def list_templates(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     return get_all_templates(db)
 
 @router.get(
     '/templates/{template_id}',
     response_model=QuestionnaireTemplateOut,
-    dependencies=[Depends(require_role("nutricionista"))],  # ou role ambos se quiser
+    dependencies=[Depends(require_role("nutricionista", "paciente"))],  # ou role ambos se quiser
 )
 def get_template(
     template_id: int,
@@ -75,4 +75,13 @@ def submit_response(
     result = compute_score_and_interpretation(db, template_id, payload)
     if not result:
         raise HTTPException(status_code=404, detail='Template não encontrado')
-    return result
+
+    # Agora salva e retorna com todos os campos preenchidos
+    response = salvar_resposta(
+        db=db,
+        template_id=template_id,
+        paciente_id=current_user.id,
+        total_score=result["total_score"],
+        interpretation=result["interpretation"]
+    )
+    return response

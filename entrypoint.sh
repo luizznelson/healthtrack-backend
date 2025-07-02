@@ -1,30 +1,23 @@
-@echo off
-echo ================================================
-echo  Iniciando setup do HealthTrack Backend
-echo ================================================
+#!/bin/bash
+set -e  # Faz o script parar se der erro
 
-echo.
-echo Iniciando migracoes
-alembic revision --autogenerate -m "initial migration"
+echo "==============================================="
+echo "  Iniciando setup do HealthTrack Backend"
+echo "==============================================="
 
-echo.
-echo  Executando migracoes Alembic...
+echo "🔁 Criando migration (ignorado se já existir)..."
+alembic revision --autogenerate -m "initial migration" || true
+
+echo "📦 Aplicando migrations Alembic..."
 alembic upgrade head
 
-echo.
-echo  Populando questionario de Avaliação de Risco de Diabetes...
+echo "🌱 Populando questionário de diabetes..."
 python -m seeds.diabetes_questionario
 
-echo.
-echo  Populando questionario de Avaliação de Risco de Hiperensao...
+echo "🌱 Populando questionário de hipertensão..."
 python -m seeds.hipertensao_questionario
 
-echo "Setup completo. Iniciando backend..."
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+echo "✅ Setup completo. Iniciando servidor..."
 
-echo.
-echo ================================================
-echo  Setup concluido!
-echo  Acesse: http://localhost:8000/docs
-echo ================================================
-pause
+# Esse comando substitui o processo atual (é o correto!)
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000

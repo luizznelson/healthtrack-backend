@@ -5,6 +5,9 @@ echo "==============================================="
 echo "  Iniciando setup do HealthTrack Backend"
 echo "==============================================="
 
+echo "🔁 Garantindo que pasta de versões existe..."
+mkdir -p alembic/versions
+
 echo "🔁 Criando migration (ignorado se já existir)..."
 alembic revision --autogenerate -m "initial migration" || true
 

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models import QuestionnaireTemplate, QuestionTemplate, OptionTemplate, Questionario, QuestionnaireResponse, QuestionnaireAnswer
+from app.models import QuestionnaireTemplate, QuestionTemplate, OptionTemplate, Questionario, QuestionnaireResponse, QuestionnaireAnswer, Relatorio
 from app.schemas import QuestionnaireTemplateCreate, QuestionnaireResponseIn
 
 # CRUD questionários estáticos

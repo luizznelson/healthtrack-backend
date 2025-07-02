@@ -21,3 +21,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(questionario.router, prefix="/questionarios", tags=["questionarios"])
 app.include_router(nutricionistas.router, prefix="/nutricionistas", tags=["nutricionistas"])
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "HealthTrack Backend rodando com sucesso 🚀"}

@@ -13,8 +13,6 @@ class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
-    
-
 
 class UserBase(BaseModel):
     username: str
@@ -120,12 +118,22 @@ class Answer(BaseModel):
 class QuestionnaireResponseIn(BaseModel):
     answers: List[Answer]
 
+class QuestionnaireAnswerOut(BaseModel):
+    question_id: int
+    selected_option_id: int
+
+    model_config = {
+        "from_attributes": True
+    }
+    
+
 class QuestionnaireResponseOut(BaseModel):
     template_id: int
     total_score: int
     paciente_id: int
     interpretation: str
     data_resposta: datetime
+    answers: List[QuestionnaireAnswerOut]
 
     model_config = {
         "from_attributes": True

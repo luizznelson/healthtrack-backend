@@ -8,6 +8,7 @@ from app.schemas import (
     QuestionnaireTemplateOut,
     QuestionnaireResponseIn,
     QuestionnaireResponseOut,
+    QuestionnaireAnswerOut,
     User,
 )
 from app.crud.questionario import (
@@ -16,6 +17,7 @@ from app.crud.questionario import (
     get_template_by_id,
     compute_score_and_interpretation,
     salvar_resposta,
+    listar_respostas_detalhadas_por_resposta
 )
 from app.core.security import get_current_user, require_role
 
@@ -76,12 +78,25 @@ def submit_response(
     if not result:
         raise HTTPException(status_code=404, detail='Template não encontrado')
 
-    # Agora salva e retorna com todos os campos preenchidos
     response = salvar_resposta(
         db=db,
         template_id=template_id,
         paciente_id=current_user.id,
         total_score=result["total_score"],
-        interpretation=result["interpretation"]
+        interpretation=result["interpretation"],
+        respostas=result["respostas"],
     )
     return response
+
+
+@router.get(
+    "/respostas/{response_id}/detalhes",
+    response_model=List[QuestionnaireAnswerOut],
+    dependencies=[Depends(require_role("nutricionista", "paciente"))]
+)
+def detalhes_resposta(
+    response_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return listar_respostas_detalhadas_por_resposta(db, response_id)

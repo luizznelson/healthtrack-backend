@@ -6,8 +6,12 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 Base = declarative_base()
+
+def now_brazil():
+    return datetime.now(ZoneInfo("America/Sao_Paulo"))
 
 class UserRole(PyEnum):
     paciente = 'paciente'
@@ -35,7 +39,7 @@ class Questionario(Base):
     __tablename__ = 'questionarios'
     id = Column(Integer, primary_key=True, index=True)
     respostas = Column(Text)          # conforme seu schema legado
-    data = Column(DateTime, default=datetime.utcnow)
+    data = Column(DateTime, default=now_brazil)
     owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
     owner = relationship(
@@ -51,7 +55,7 @@ class Relatorio(Base):
     conteudo = Column(Text)
     paciente_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     nutricionista_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    data_criacao = Column(DateTime, default=datetime.utcnow)
+    data_criacao = Column(DateTime, default=now_brazil)
 
     paciente = relationship(
         'User',
@@ -72,7 +76,7 @@ class QuestionnaireResponse(Base):
     paciente_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     total_score = Column(Integer, nullable=False)
     interpretation = Column(Text, nullable=False)
-    data_resposta = Column(DateTime, default=datetime.utcnow)
+    data_resposta = Column(DateTime, default=now_brazil)
 
     paciente = relationship("User", foreign_keys=[paciente_id])
     template = relationship("QuestionnaireTemplate", foreign_keys=[template_id])
@@ -102,3 +106,15 @@ class OptionTemplate(Base):
     score = Column(Integer, nullable=False, default=0)
     is_default = Column(Boolean, default=False)
     question = relationship('QuestionTemplate', back_populates='options')
+    
+class QuestionnaireAnswer(Base):
+    __tablename__ = "questionnaire_answers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    response_id = Column(Integer, ForeignKey("questionnaire_responses.id", ondelete="CASCADE"))
+    question_id = Column(Integer, ForeignKey("question_templates.id", ondelete="CASCADE"))
+    selected_option_id = Column(Integer, ForeignKey("option_templates.id", ondelete="CASCADE"))
+
+    response = relationship("QuestionnaireResponse", backref="answers")
+    question = relationship("QuestionTemplate")
+    selected_option = relationship("OptionTemplate")

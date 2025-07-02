@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models import QuestionnaireTemplate, QuestionTemplate, OptionTemplate, Questionario
+from app.models import QuestionnaireTemplate, QuestionTemplate, OptionTemplate, Questionario, QuestionnaireResponse, QuestionnaireAnswer
 from app.schemas import QuestionnaireTemplateCreate, QuestionnaireResponseIn
 
 # CRUD questionários estáticos
@@ -25,23 +25,44 @@ def create_questionnaire_template(db: Session, data: QuestionnaireTemplateCreate
     db.refresh(tmpl)
     return tmpl
 
-from sqlalchemy.orm import Session
-from app.models import QuestionnaireResponse, Relatorio
-
+def listar_respostas_detalhadas_por_resposta(db: Session, response_id: int):
+    return (
+        db.query(QuestionnaireAnswer)
+        .filter(QuestionnaireAnswer.response_id == response_id)
+        .all()
+    )
 
 def salvar_resposta(
-    db: Session, template_id: int, paciente_id: int, total_score: int, interpretation: str
+    db: Session,
+    template_id: int,
+    paciente_id: int,
+    total_score: int,
+    interpretation: str,
+    respostas: list[dict],  # lista com {"question_id", "selected_option_id"}
 ) -> QuestionnaireResponse:
+    # Cria o registro da resposta principal
     response = QuestionnaireResponse(
         template_id=template_id,
         paciente_id=paciente_id,
         total_score=total_score,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
     db.add(response)
+    db.flush()  # Garante que response.id está disponível antes do commit
+
+    # Salva as respostas individuais
+    for r in respostas:
+        answer = QuestionnaireAnswer(
+            response_id=response.id,
+            question_id=r["question_id"],
+            selected_option_id=r["selected_option_id"]
+        )
+        db.add(answer)
+
     db.commit()
     db.refresh(response)
     return response
+
 
 
 def listar_respostas_por_paciente(db: Session, paciente_id: int):
@@ -77,13 +98,20 @@ def compute_score_and_interpretation(db: Session, template_id: int, answers: Que
         return None
 
     total = 0
+    respostas_salvas = [] 
+
     for ans in answers.answers:
         opt = db.query(OptionTemplate).filter(
             OptionTemplate.id == ans.option_id,
             OptionTemplate.question_id == ans.question_id
         ).first()
+
         if opt:
             total += opt.score
+            respostas_salvas.append({
+                "question_id": ans.question_id,
+                "selected_option_id": ans.option_id
+            })
 
     # 🧠 Interpretação dinâmica por questionário
     title = template.title.lower()
@@ -107,11 +135,13 @@ def compute_score_and_interpretation(db: Session, template_id: int, answers: Que
             interp = 'Risco muito alto de desenvolver hipertensão.'
 
     else:
-        interp = f'Score total: {total}. Nenhuma regra de interpretação cadastrada para "{template.title}".'
+        interp = f'Score total: {total}. Nenhuma regra de interpretação cadastrada para \"{template.title}\".'
 
     return {
         'template_id': template_id,
         'total_score': total,
-        'interpretation': interp
+        'interpretation': interp,
+        'respostas': respostas_salvas
     }
+
 
